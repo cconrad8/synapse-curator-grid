@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bind JSON Schema to Synapse</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 2rem;
+      max-width: 700px;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 1.5rem;
+      cursor: pointer;
+    }
+
+    .status {
+      margin-top: 1rem;
+      white-space: pre-wrap;
+    }
+
+    .error {
+      color: #cf222e;
+    }
+
+    .success {
+      color: #1a7f37;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Bind JSON Schema</h1>
+  <p><strong>What schema do you want to annotate your data with?</strong></p>
+
+  <label>
+    Synapse Personal Access Token
+    <input id="token" type="password" placeholder="Paste PAT (no 'Bearer')" />
+  </label>
+
+  <label>
+    Schema URI
+    <input id="schemaUri" placeholder="sage.schemas.vXXX-...schema-0.1.0" />
+  </label>
+
+  <label>
+    Bind schema to:
+    <select id="entityType">
+      <option value="folder">Folder</option>
+      <option value="recordset">RecordSet</option>
+    </select>
+  </label>
+
+  <label>
+    Synapse ID
+    <input id="entityId" placeholder="syn12345678" />
+  </label>
+
+  <button onclick="bindSchema()">Bind Schema</button>
+
+  <div id="status" class="status"></div>
+
+  <script>
+    async function bindSchema() {
+      const token = document.getElementById("token").value.trim()
+      const schemaUri = document.getElementById("schemaUri").value.trim()
+      const entityType = document.getElementById("entityType").value
+      const entityId = document.getElementById("entityId").value.trim()
+      const status = document.getElementById("status")
+
+      status.textContent = ""
+
+      if (!token || !schemaUri || !entityId) {
+        status.innerHTML = `<div class="error">All fields are required.</div>`
+        return
+      }
+
+      try {
+        const response = await fetch(
+          "http://localhost:8000/bind-json-schema",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              schemaUri,
+              entityType,
+              entityId
+            })
+          }
+        )
+
+        const text = await response.text()
+
+        if (!response.ok) {
+          throw new Error(text)
+        }
+
+        status.innerHTML = `<div class="success">${text}</div>`
+
+      } catch (err) {
+        status.innerHTML = `<div class="error">${err.message}</div>`
+      }
+    }
+  </script>
+
+</body>
+</html>
